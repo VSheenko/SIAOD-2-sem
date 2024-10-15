@@ -26,35 +26,22 @@ std::vector<std::string> Split(std::string s, const std::string& separator) {
     return tokens;
 }
 
-void PrintFileContent(const std::string& s_file_name) {
-    std::ifstream file(s_file_name);
-
+void PrintFileContent(std::ifstream& file) {
     std::string s;
     while (std::getline(file, s)) {
         std::cout << s << '\n';
     }
-
-    file.close();
 }
 
-void AppendContentToFile(const std::string& s_file_name, const std::string& s_content, bool& SUCCESS_CODE) {
-    std::ofstream file(s_file_name, std::ios::app);
-
-    file << s_content;
-
-    SUCCESS_CODE = file.good();
-    file.close();
+void AppendContentToFile(std::ofstream& file, const std::string& s_content) {
+    file << s_content << '\n';
 }
 
-int GetNumByOrdinal(const std::string& s_file_name, int ordinal_num, bool& SUCCESS_CODE) {
-    std::ifstream file(s_file_name);
-    SUCCESS_CODE = true;
-
+int GetNumByOrdinal(std::ifstream& file, int ordinal_num, bool& SUCCESS_CODE) {
     std::string s;
     int cur_num = 0;
     while (std::getline(file, s)) {
         std::vector<std::string> parts = Split(s, " ");
-
 
         for (const auto &part: parts) {
             cur_num++;
@@ -66,14 +53,12 @@ int GetNumByOrdinal(const std::string& s_file_name, int ordinal_num, bool& SUCCE
         }
     }
 
-    file.close();
+
     SUCCESS_CODE = false;
     return SUCCESS_CODE;
 }
 
-int CountNum(const std::string& s_file_name) {
-    std::ifstream file(s_file_name);
-
+int CountNum(std::ifstream& file) {
     std::string s;
     int count = 0;
     while (std::getline(file, s)) {
@@ -83,20 +68,26 @@ int CountNum(const std::string& s_file_name) {
             count++;
     }
 
-    file.close();
     return count;
 }
 
-void Partition(const std::string& s_file_name) {
-    int count = CountNum(s_file_name);
+void Partition(std::ifstream& in_file) {
+    int count = CountNum(in_file);
 
-    std::ifstream in_file(s_file_name);
     std::ofstream out_a_file("a_half.txt");
     std::ofstream out_b_file("b_half.txt");
+
+    if (!out_a_file.is_open() || !out_b_file.is_open()) {
+        std::cerr << "File not found\n";
+        return;
+    }
 
     int k = 0;
     std::string s;
     int half = count / 2;
+
+    in_file.clear();
+    in_file.seekg(0, std::ios::beg);
     while (std::getline(in_file, s)) {
         std::vector<std::string> parts = Split(s, " ");
 
@@ -109,15 +100,18 @@ void Partition(const std::string& s_file_name) {
         }
     }
 
-    in_file.close();
     out_a_file.close();
     out_b_file.close();
 }
 
-void Merge(const std::string& s_file_name) {
+void Merge(std::ofstream& out_file) {
     std::ifstream in_a_file("a_half.txt");
     std::ifstream in_b_file("b_half.txt");
-    std::ofstream out_file(s_file_name);
+
+    if (!in_b_file.is_open() || !out_file.is_open()) {
+        std::cerr << "File not found\n";
+        return;
+    }
 
     std::string s_a;
     std::string s_b;
@@ -131,9 +125,9 @@ void Merge(const std::string& s_file_name) {
 
         if (a_no_eof && b_no_eof) {
             if (a > b)
-                out_file << a << '\n' << b << '\n';
-            else
                 out_file << b << '\n' << a << '\n';
+            else
+                out_file << a << '\n' << b << '\n';
             a_no_eof = (bool)std::getline(in_a_file, s_a);
             b_no_eof = (bool)std::getline(in_b_file, s_b);
         } else if (a_no_eof) {
@@ -145,7 +139,6 @@ void Merge(const std::string& s_file_name) {
         }
     }
 
-    out_file.close();
     in_b_file.close();
     in_a_file.close();
 }

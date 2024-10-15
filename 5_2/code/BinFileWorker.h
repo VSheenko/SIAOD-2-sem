@@ -1,24 +1,42 @@
 #ifndef CODE_BINFILEWORKER_H
 #define CODE_BINFILEWORKER_H
-
 #include <iostream>
-#include <fstream>
-#include <string>
 #include <vector>
-#include <cassert>
+#include <string>
+#include <fstream>
 #include <cstring>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
-struct Violation{
-    std::string carNumber;
-    std::string name;
-    std::string model;
-    std::string data;
-    std::string place;
-    std::string article;
-    int fine;
+std::vector<std::string> Split(std::string s, const std::string& separator) {
+    std::vector<std::string> tokens;
+    size_t pos = 0;
+    std::string token;
+
+    while ((pos = s.find(separator)) != std::string::npos) {
+        token = s.substr(0, pos);
+
+        if (!token.empty())
+            tokens.push_back(token);
+
+        s.erase(0, pos + separator.length());
+    }
+
+    if (!s.empty())
+        tokens.push_back(s);
+
+    return tokens;
+}
+
+struct Violation {
+    char carNumber[16];
+    char name[32];
+    char model[32];
+    char data[32];
+    char place[32];
+    char article[32];
+    short fine;
 
     void SetFieldsByStr(const std::string& s) {
         std::vector<std::string> tokens = Split(s, ";");
@@ -28,293 +46,210 @@ struct Violation{
             return;
         }
 
-        carNumber = tokens[0];
-        name = tokens[1];
-        model = tokens[2];
-        data = tokens[3];
-        place = tokens[4];
-        article = tokens[5];
+        strcpy(carNumber, tokens[0].c_str());
+        strcpy(name, tokens[1].c_str());
+        strcpy(model, tokens[2].c_str());
+        strcpy(data, tokens[3].c_str());
+        strcpy(place, tokens[4].c_str());
+        strcpy(article, tokens[5].c_str());
         fine = std::stoi(tokens[6]);
     }
 
-    std::string ToString () {
+    std::string ToString() {
         std::string res;
 
-        res = carNumber + ";" + name + ";" + model + ";" + data + ";" + place + ";" + article + ";" + std::to_string(fine) + ";";
+        res = carNumber + std::string(";") + name + std::string(";") + model + std::string(";") +
+                data + std::string(";") + place + std::string(";") + article + std::string(";") +
+                std::to_string(fine) + std::string(";");
 
         return res;
     }
-
-private:
-    std::vector<std::string> Split(std::string s, const std::string& separator) {
-        std::vector<std::string> tokens;
-        size_t pos = 0;
-        std::string token;
-
-        while ((pos = s.find(separator)) != std::string::npos) {
-            token = s.substr(0, pos);
-
-            if (!token.empty())
-                tokens.push_back(token);
-
-            s.erase(0, pos + separator.length());
-        }
-
-        if (!s.empty())
-            tokens.push_back(s);
-
-        return tokens;
-    }
 };
 
-bool AreExist(const std::vector<std::string>& files_name) {
-    for (const auto& file_name : files_name) {
-        if (!fs::exists(file_name))
-            return false;
-    }
+void TextToBin(const std::string& file_name, const std::string& bin_file_name) {
+    std::ifstream file(file_name);
+    std::ofstream bin_file(bin_file_name, std::ios::binary);
 
-    return true;
-}
-
-template<typename T>
-void ExtractViolationFromBinStream(T& in, Violation& violation) {
-    static_assert(
-            std::is_same<T, std::stringstream>::value || std::is_same<T, std::fstream>::value,
-            "T must be a stringstream or fstream"
-    );
-
-    auto readString = [&](std::string& str) {
-        unsigned int length;
-        in.read(reinterpret_cast<char*>(&length), sizeof(length));
-
-        if (in.eof())
-            return;
-
-        str.resize(length);
-        in.read(&str[0], length);
-    };
-
-    readString(violation.carNumber);
-    readString(violation.name);
-    readString(violation.model);
-    readString(violation.data);
-    readString(violation.place);
-    readString(violation.article);
-
-    in.read(reinterpret_cast<char*>(&violation.fine), sizeof(violation.fine));
-}
-template<typename T>
-void InsertViolationToBinStream(T& out, Violation& violation) {
-    static_assert(
-            std::is_same<T, std::stringstream>::value || std::is_same<T, std::fstream>::value,
-            "T must be a stringstream or fstream"
-    );
-
-    auto writeString = [&](const std::string& str) {
-        unsigned int length = str.size();
-        out.write(reinterpret_cast<const char*>(&length), sizeof(length)); // Записываем длину
-        out.write(str.data(), length); // Записываем данные строки
-    };
-
-    writeString(violation.carNumber);
-    writeString(violation.name);
-    writeString(violation.model);
-    writeString(violation.data);
-    writeString(violation.place);
-    writeString(violation.article);
-
-    out.write(reinterpret_cast<const char*>(&violation.fine), sizeof(violation.fine));
-}
-
-void ReplaceViolationInBinStream(std::fstream& out, Violation& violation, std::streampos pos, size_t old_record_size) {
-    out.seekp(pos);
-
-    InsertViolationToBinStream(out, violation);
-}
-
-void TextToBin(const std::string& s_text_file, const std::string& s_bin_file) {
-    std::fstream out(s_bin_file, std::ios::binary | std::ios::out);
-    std::fstream in(s_text_file, std::ios::in);
-
-    std::string s;
-    Violation violation;
-    while (std::getline(in, s)) {
-        violation.SetFieldsByStr(s);
-
-        InsertViolationToBinStream(out, violation);
-    }
-
-    out.close();
-    in.close();
-}
-
-void BinToText(const std::string& s_text_file, const std::string& s_bin_file) {
-    std::fstream in(s_bin_file, std::ios::binary | std::ios::in);
-    std::fstream out(s_text_file, std::ios::out);
-
-    assert("Bin file is not open" && in.is_open() == true);
-    assert("Text file is not open" && out.is_open() == true);
-
-    Violation violation;
-    while (true) {
-        ExtractViolationFromBinStream(in, violation);
-
-        if (in.eof())
-            break;
-
-        out << violation.ToString() <<'\n';
-    }
-
-    out.close();
-    in.close();
-}
-
-void PrintAllViolationInBin(const std::string& s_bin_file) {
-    std::fstream in(s_bin_file, std::ios::binary | std::ios::in);
-
-    assert("Bin file is not open" && in.is_open() == true);
-
-    Violation violation;
-    while (true) {
-        ExtractViolationFromBinStream(in, violation);
-
-        if (in.eof())
-            break;
-
-        std::cout << violation.ToString() << '\n';
-    }
-
-    in.close();
-}
-
-// По первому вхождению
-Violation GetViolationByNum(const std::string& s_bin_file, int num) {
-    std::fstream in(s_bin_file, std::ios::binary | std::ios::in);
-
-    assert("Bin file is not open" && in.is_open());
-
-    int count = 0;
-    Violation violation;
-    while (true) {
-        ExtractViolationFromBinStream(in, violation);
-
-        if (in.eof())
-            break;
-
-        if (count == num)
-            return violation;
-
-        count++;
-    }
-
-    return {};
-}
-
-void DeleteViolationByCarNum(const std::string& s_bin_file, const std::string& s_car_num) {
-    std::fstream file(s_bin_file, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
-    std::stringstream ss;
-
-    assert("Bin file is not open" && file.is_open());
-
-    size_t file_size = file.tellg();
-    file.seekg(0);
-
-    Violation violation;
-    Violation last_violation;
-
-    std::streampos pos_to_delete = -1;
-    std::streampos last_record_pos = -1;
-    std::streampos  cur_pos = std::ios::beg;
-
-    while (cur_pos != file_size) {
-        last_record_pos = cur_pos;
-        ExtractViolationFromBinStream(file, violation);
-
-        if (violation.carNumber == s_car_num && pos_to_delete == -1)
-            pos_to_delete = cur_pos;
-
-        last_violation = violation;
-        cur_pos = file.tellg();
-    }
-
-    if (pos_to_delete == -1) {
-        std::cerr << "Record not found" << '\n';
+    if (!file.is_open() || !bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
         return;
     }
 
-    cur_pos = std::ios::beg;
-    file.seekg(std::ios::beg);
-    while (cur_pos != last_record_pos) {
-        ExtractViolationFromBinStream(file, violation);
+    std::string s;
+    Violation violation;
 
-        if (cur_pos == pos_to_delete)
-            InsertViolationToBinStream(ss, last_violation);
-        else
-            InsertViolationToBinStream(ss, violation);
-
-        cur_pos = file.tellg();
+    while (std::getline(file, s)) {
+        violation.SetFieldsByStr(s);
+        bin_file.write((char*)&violation, sizeof(Violation));
     }
 
-    file.seekp(std::ios::beg);
-    file.write(ss.str().c_str(), ss.str().size());
+    file.close();
+    bin_file.close();
+}
+
+void BinToText(const std::string& file_name, const std::string& bin_file_name) {
+    std::ifstream bin_file(bin_file_name, std::ios::binary);
+    std::ofstream file(file_name);
+
+    if (!bin_file.is_open() || !file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
+    }
+
+    Violation violation;
+
+    while (bin_file.read((char*)&violation, sizeof(Violation))) {
+        file << violation.ToString() << '\n';
+    }
+
+    bin_file.close();
     file.close();
 }
 
-void SelectionByCarNum(const std::string& s_source_bin, const std::string& s_new_bin, const std::string& s_car_num) {
-    assert("No such file" && AreExist({s_source_bin}));
+void PrintAllViolationInBin(const std::string& bin_file_name) {
+    std::ifstream bin_file(bin_file_name, std::ios::binary);
 
-    std::fstream in(s_source_bin, std::ios::binary | std::ios::in);
-    std::fstream out(s_new_bin, std::ios::binary | std::ios::out);
-
-    assert("Source bin file is not open" && in.is_open());
-    assert("New bin file is not open" && out.is_open());
-
-
-    Violation violation;
-
-    while (true) {
-        ExtractViolationFromBinStream(in, violation);
-
-        if (in.eof())
-            break;
-
-        if (violation.carNumber == s_car_num)
-            InsertViolationToBinStream(out, violation);
-    };
-
-    in.close();
-    out.close();
-}
-
-void DoubleFine(const std::string& s_bin_file, const std::string& s_start_date, const std::string& s_end_date, const std::string& article) {
-    const std::string temp_file_name = "temp_file.bin";
-
-    assert("No such file" && AreExist({s_bin_file}));
-
-    std::fstream in(s_bin_file, std::ios::binary | std::ios::in);
-    std::fstream out(temp_file_name, std::ios::binary | std::ios::out);
-
-    assert("Bin file is not open" && in.is_open());
-    assert("Temp Bin file is not open" && out.is_open());
-
-    Violation violation;
-    while (true) {
-        ExtractViolationFromBinStream(in, violation);
-
-        if (in.eof())
-            break;
-
-        if (s_start_date >= violation.data &&  violation.data <= s_end_date && violation.article == article)
-            violation.fine *= 2;
-
-        InsertViolationToBinStream(out, violation);
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
     }
 
-    in.close();
-    out.close();
+    Violation violation;
 
-    remove(s_bin_file.c_str());
-    rename(temp_file_name.c_str(), s_bin_file.c_str());
+    while (bin_file.read((char*)&violation, sizeof(Violation))) {
+        std::cout << violation.ToString() << '\n';
+    }
+
+    bin_file.close();
 }
 
-#endif
+Violation GetViolationByCarNum(const std::string& bin_file_name, const std::string& car_num, bool& SUCCESS_CODE) {
+    std::ifstream bin_file(bin_file_name, std::ios::binary);
+    SUCCESS_CODE = false;
+
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return {};
+    }
+
+    Violation violation;
+
+    while (bin_file.read((char*)&violation, sizeof(Violation))) {
+        if (strcmp(violation.carNumber, car_num.c_str()) == 0) {
+            bin_file.close();
+            SUCCESS_CODE = true;
+            return violation;
+        }
+    }
+
+    bin_file.close();
+    return {};
+}
+
+void DeleteViolationByCarNum(const std::string& bin_file_name, const std::string& car_num) {
+    std::fstream bin_file(bin_file_name, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
+    }
+
+    size_t file_size = fs::file_size(bin_file_name);
+    bin_file.seekg(0, std::ios::beg);
+
+    int violations_count = file_size / sizeof(Violation);
+
+    std::streampos last_record_pos = (violations_count - 1) * sizeof(Violation);
+    Violation last_violation;
+    bin_file.seekg(last_record_pos);
+    bin_file.read((char*)&last_violation, sizeof(Violation));
+
+    bool deleted = false;
+    std::streampos cur_pos = std::ios::beg;
+    Violation violation;
+
+    bin_file.seekp(std::ios::beg);
+    while (cur_pos != file_size) {
+        bin_file.read((char*)&violation, sizeof(Violation));
+
+        if (strcmp(violation.carNumber, car_num.c_str()) == 0 && !deleted) {
+            bin_file.seekp(cur_pos);
+            bin_file.write((char*)&last_violation, sizeof(Violation));
+            deleted = true;
+        }
+
+        cur_pos = bin_file.tellg();
+    }
+
+    if (!deleted)
+        std::cerr << "Record not found" << '\n';
+
+    bin_file.close();
+    fs::resize_file(bin_file_name, file_size - sizeof(Violation));
+}
+
+void SelectionByCarNum(const std::string& bin_file_name, const std::string& new_file_name, const std::string& car_num) {
+    std::ifstream bin_file(bin_file_name, std::ios::binary);
+    std::ofstream new_bin_file(new_file_name, std::ios::binary);
+
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
+    }
+
+    Violation violation;
+
+    while (bin_file.read((char*)&violation, sizeof(Violation))) {
+        if (strcmp(violation.carNumber, car_num.c_str()) == 0)
+            new_bin_file << violation.ToString() << '\n';
+    }
+
+    bin_file.close();
+}
+
+void DoubleFine(const std::string& bin_file_name, const std::string& start_date,
+                const std::string& end_date, const std::string& article) {
+
+    std::fstream bin_file(bin_file_name, std::ios::binary | std::ios::in | std::ios::out);
+
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
+    }
+
+    Violation violation;
+
+    while (bin_file.read((char*)&violation, sizeof(Violation))) {
+        if (violation.data >= start_date && violation.data <= end_date && strcmp(violation.article, article.c_str()) == 0) {
+            violation.fine *= 2;
+            bin_file.seekp(-sizeof(Violation), std::ios::cur);
+            bin_file.write((char *) &violation, sizeof(Violation));
+        }
+    }
+
+    bin_file.close();
+}
+
+void PrintBinFileInHex(const std::string& bin_file_name) {
+    std::ifstream bin_file(bin_file_name, std::ios::binary);
+
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return;
+    }
+
+    char c;
+    int k = 0;
+    while (bin_file.get(c)) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0')
+                  << (static_cast<unsigned int>(c) & 0xFF)
+                  << ' ';
+        k++;
+
+        if (k % 16 == 0)
+            std::cout << '\n';
+    }
+
+    bin_file.close();
+}
+
+#endif //CODE_BINFILEWORKER_H
