@@ -252,4 +252,32 @@ void PrintBinFileInHex(const std::string& bin_file_name) {
     bin_file.close();
 }
 
+
+std::string GetViolationByOrdinalNum(const std::string& bin_file_name, const int num, bool& SUCCESS_CODE) {
+    std::fstream bin_file(bin_file_name, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
+    SUCCESS_CODE = false;
+
+    if (!bin_file.is_open()) {
+        std::cerr << "Error opening file" << '\n';
+        return "";
+    }
+
+    size_t file_size = fs::file_size(bin_file_name);
+    bin_file.seekg(0, std::ios::beg);
+    int violations_count = file_size / sizeof(Violation);
+
+    if (num > violations_count || num <= 0) {
+        return "";
+    }
+
+    std::streampos record_pos = (num - 1) * sizeof(Violation);
+    bin_file.seekg(record_pos, std::ios::beg);
+
+    Violation target_violation;
+    bin_file.read((char*)&target_violation, sizeof(Violation));
+
+    SUCCESS_CODE = true;
+    return target_violation.ToString();
+}
+
 #endif //CODE_BINFILEWORKER_H

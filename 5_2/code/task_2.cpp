@@ -37,10 +37,11 @@ int main() {
                 break;
             case 4: {
                 std::cout << "Enter the number of the violation: ";
-                std::cin >> num;
+                int ord_num;
+                std::cin >> ord_num;
 
                 bool code = false;
-                std::string s = GetViolationByCarNum(bin_file_name, num, code).ToString();
+                std::string s = GetViolationByOrdinalNum(bin_file_name, ord_num, code);
 
                 if (code)
                     std::cout << s << '\n';
