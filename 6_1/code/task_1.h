@@ -5,9 +5,16 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
 
 struct ViolationData {
-    std::string CarNum;
+    std::string carNum;
+    std::string name;
+    std::string model;
+    std::string data;
+    std::string place;
+    std::string article;
+    short fine;
 };
 
 struct Node {
@@ -81,7 +88,7 @@ void ResizeTable(HashTable& hashTable, float factor = 1.5) {
 }
 
 void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
-    size_t pos = djb2Hash(p_violation->CarNum) % hashTable.table_size;
+    size_t pos = djb2Hash(p_violation->carNum) % hashTable.table_size;
     bool K = false;
 
     while (!hashTable.hash_table[pos].opened) {
@@ -93,7 +100,7 @@ void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
         }
     }
 
-    hashTable.hash_table[pos].key = p_violation->CarNum;
+    hashTable.hash_table[pos].key = p_violation->carNum;
     hashTable.hash_table[pos].prK = K;
     hashTable.hash_table[pos].data = p_violation;
     hashTable.hash_table[pos].opened = false;
@@ -106,5 +113,59 @@ void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
         ResizeTable(hashTable);
 }
 
+void DeleteElem(HashTable& hashTable, const std::string& key) {
+    size_t pos = djb2Hash(key) % hashTable.table_size;
+
+    while ((!hashTable.hash_table[pos].opened || hashTable.hash_table[pos].deleted)
+            && hashTable.hash_table[pos].key != key) {
+        pos++;
+
+        if (pos == hashTable.table_size) {
+            pos = 0;
+        }
+    }
+
+    if (hashTable.hash_table[pos].key != key) {
+        std::cout << "No such key" << '\n';
+        return;
+    }
+
+    hashTable.hash_table[pos].deleted = true;
+    hashTable.hash_table[pos].opened = true;
+    hashTable.num_closed--;
+}
+
+void PrintHashTable(HashTable& table) {
+    std::cout << std::right << std::setw(4) << "#" << std::setw(10) << "KEY" << std::setw(16) << "Name"
+        << std::setw(12) << "OpenKey" << std::setw(12) << "DeletedKey" << std::setw(8) << "prK" <<
+        std::setw(16) << "Hash % size" << '\n';
+    for (size_t i = 0; i < table.table_size; i++) {
+        bool flag = !table.hash_table[i].opened && !table.hash_table[i].deleted;
+        std::cout << std::right << std::setw(4) << i << std::setw(10) << (flag ? table.hash_table[i].key : std::string(9, '.')) <<
+                    std::setw(16) << (flag ? table.hash_table[i].data->name : std::string(15, '.')) <<
+                    std::boolalpha << std::setw(12) << table.hash_table[i].opened <<
+                    std::setw(12) << table.hash_table[i].deleted <<
+                    std::setw(8) << table.hash_table[i].prK << std::setw(16) <<
+                    (flag ? std::to_string(djb2Hash(table.hash_table[i].key) % table.table_size) : std::string(15, '.')) << '\n';
+    }
+}
+
+size_t FindElem (HashTable& hashTable, std::string key) {
+    size_t pos = djb2Hash(key) % hashTable.table_size;
+
+    while ((!hashTable.hash_table[pos].opened || hashTable.hash_table[pos].deleted)
+           && hashTable.hash_table[pos].key != key) {
+        pos++;
+
+        if (pos == hashTable.table_size) {
+            pos = 0;
+        }
+    }
+
+    if (hashTable.hash_table[pos].key != key)
+        return -1;
+
+    return pos;
+}
 
 #endif //CODE_TASK_1_H
