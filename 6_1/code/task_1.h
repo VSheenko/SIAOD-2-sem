@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <cmath>
 
 struct ViolationData {
     std::string carNum;
@@ -19,9 +20,8 @@ struct ViolationData {
 
 struct Node {
     std::string key;
-    size_t ind{};
-    bool prK = false;
 
+    bool prK = false;
     bool opened = true;
     bool deleted = false;
 
@@ -41,7 +41,7 @@ void DelTableArr(Node* hash_table, size_t table_size) {
 }
 
 struct HashTable {
-    size_t table_size = 20;
+    size_t table_size = 5;
     size_t num_closed = 0;
     Node* hash_table;
 
@@ -56,9 +56,22 @@ struct HashTable {
 
 
 void ResizeTable(HashTable&, float);
+void PrintHashTable(HashTable&);
 void InsertElem(HashTable&, ViolationData*);
 
+bool isPrime(int num) {
+    int q = (int)sqrt(num);
 
+    if (q*q == num)
+        return false;
+
+    for (int i = 2; i < q; i++) {
+        if (num % i == 0)
+            return false;
+    }
+
+    return true;
+}
 
 size_t djb2Hash(const std::string& str) {
     size_t hash = 5381;
@@ -68,23 +81,28 @@ size_t djb2Hash(const std::string& str) {
     return hash;
 }
 
-void ResizeTable(HashTable& hashTable, float factor = 1.5) {
+
+
+void ResizeTable(HashTable& hashTable) {
     size_t old_size = hashTable.table_size;
-    Node* old_table = new Node[old_size];
+    Node* old_table = hashTable.hash_table;
 
-    memcpy(old_table, hashTable.hash_table, old_size);
-    DelTableArr(hashTable.hash_table, old_size);
+    size_t new_size = old_size * 2 + 1;
+    while (!isPrime(new_size))
+        new_size += 2;
 
-    hashTable.table_size = (size_t)(old_size * factor);
+    hashTable.table_size = new_size;
     hashTable.hash_table = new Node[hashTable.table_size];
+    hashTable.num_closed = 0;
+
 
     for (size_t i = 0; i < old_size; i++) {
-        if (old_table[i].opened) {
+        if (!old_table[i].opened) {
             InsertElem(hashTable, old_table[i].data);
         }
     }
 
-    DelTableArr(old_table, old_size);
+    delete[] old_table;
 }
 
 void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
@@ -100,14 +118,14 @@ void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
         }
     }
 
+    if (!hashTable.hash_table[pos].deleted)
+        hashTable.num_closed++;
+
     hashTable.hash_table[pos].key = p_violation->carNum;
     hashTable.hash_table[pos].prK = K;
     hashTable.hash_table[pos].data = p_violation;
     hashTable.hash_table[pos].opened = false;
     hashTable.hash_table[pos].deleted = false;
-    hashTable.hash_table[pos].ind = pos;
-
-    hashTable.num_closed++;
 
     if ((float)hashTable.num_closed / (float)hashTable.table_size > 0.75)
         ResizeTable(hashTable);
@@ -126,13 +144,14 @@ void DeleteElem(HashTable& hashTable, const std::string& key) {
     }
 
     if (hashTable.hash_table[pos].key != key) {
-        std::cout << "No such key" << '\n';
         return;
     }
 
+    delete hashTable.hash_table[pos].data;
+    hashTable.hash_table[pos].data = nullptr;
+
     hashTable.hash_table[pos].deleted = true;
     hashTable.hash_table[pos].opened = true;
-    hashTable.num_closed--;
 }
 
 void PrintHashTable(HashTable& table) {
@@ -150,7 +169,7 @@ void PrintHashTable(HashTable& table) {
     }
 }
 
-size_t FindElem (HashTable& hashTable, std::string key) {
+size_t FindElem (HashTable& hashTable, const std::string& key) {
     size_t pos = djb2Hash(key) % hashTable.table_size;
 
     while ((!hashTable.hash_table[pos].opened || hashTable.hash_table[pos].deleted)

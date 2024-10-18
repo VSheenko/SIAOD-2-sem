@@ -24,11 +24,8 @@ int main() {
 
     PrintHashTable(h);
 
-    for (int i = 0; i < data.size(); i++) {
-        DeleteElem(h, data[i]->carNum);
-    }
+    DeleteElem(h, "D321OR99");
 
     std::cout << '\n';
     PrintHashTable(h);
-
 }
