@@ -8,16 +8,6 @@
 #include <iomanip>
 #include <cmath>
 
-struct ViolationData {
-    std::string carNum;
-    std::string name;
-    std::string model;
-    std::string data;
-    std::string place;
-    std::string article;
-    short fine;
-};
-
 struct Node {
     std::string key;
 
@@ -25,20 +15,9 @@ struct Node {
     bool opened = true;
     bool deleted = false;
 
-    ViolationData* data = nullptr;
+    int ind_data;
 };
 
-void DelTableArr(Node* hash_table, size_t table_size) {
-    for (int i = 0; i < table_size; i++) {
-        if (hash_table[i].data != nullptr) {
-            delete hash_table[i].data;
-            hash_table[i].data = nullptr;
-        }
-    }
-
-    delete[] hash_table;
-    hash_table = nullptr;
-}
 
 struct HashTable {
     size_t table_size = 5;
@@ -50,14 +29,14 @@ struct HashTable {
     }
 
     ~HashTable() {
-        DelTableArr(hash_table, table_size);
+        delete[] hash_table;
     }
 };
 
 
 void ResizeTable(HashTable&, float);
 void PrintHashTable(HashTable&);
-void InsertElem(HashTable&, ViolationData*);
+void InsertElem(HashTable&, std::string key, int ind_data);
 
 bool isPrime(int num) {
     int q = (int)sqrt(num);
@@ -98,15 +77,15 @@ void ResizeTable(HashTable& hashTable) {
 
     for (size_t i = 0; i < old_size; i++) {
         if (!old_table[i].opened) {
-            InsertElem(hashTable, old_table[i].data);
+            InsertElem(hashTable, old_table[i].key, old_table[i].ind_data);
         }
     }
 
     delete[] old_table;
 }
 
-void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
-    size_t pos = djb2Hash(p_violation->carNum) % hashTable.table_size;
+void InsertElem(HashTable& hashTable, std::string key, int ind_data) {
+    size_t pos = djb2Hash(key) % hashTable.table_size;
     bool K = false;
 
     while (!hashTable.hash_table[pos].opened) {
@@ -121,9 +100,9 @@ void InsertElem(HashTable& hashTable, ViolationData* p_violation) {
     if (!hashTable.hash_table[pos].deleted)
         hashTable.num_closed++;
 
-    hashTable.hash_table[pos].key = p_violation->carNum;
+    hashTable.hash_table[pos].key = key;
     hashTable.hash_table[pos].prK = K;
-    hashTable.hash_table[pos].data = p_violation;
+    hashTable.hash_table[pos].ind_data = ind_data;
     hashTable.hash_table[pos].opened = false;
     hashTable.hash_table[pos].deleted = false;
 
@@ -138,17 +117,12 @@ void DeleteElem(HashTable& hashTable, const std::string& key) {
             && hashTable.hash_table[pos].key != key) {
         pos++;
 
-        if (pos == hashTable.table_size) {
+        if (pos == hashTable.table_size)
             pos = 0;
-        }
     }
 
-    if (hashTable.hash_table[pos].key != key) {
+    if (hashTable.hash_table[pos].key != key)
         return;
-    }
-
-    delete hashTable.hash_table[pos].data;
-    hashTable.hash_table[pos].data = nullptr;
 
     hashTable.hash_table[pos].deleted = true;
     hashTable.hash_table[pos].opened = true;
@@ -161,7 +135,7 @@ void PrintHashTable(HashTable& table) {
     for (size_t i = 0; i < table.table_size; i++) {
         bool flag = !table.hash_table[i].opened && !table.hash_table[i].deleted;
         std::cout << std::right << std::setw(4) << i << std::setw(10) << (flag ? table.hash_table[i].key : std::string(9, '.')) <<
-                    std::setw(16) << (flag ? table.hash_table[i].data->name : std::string(15, '.')) <<
+                    std::setw(16) << (flag ? table.hash_table[i].key : std::string(15, '.')) <<
                     std::boolalpha << std::setw(12) << table.hash_table[i].opened <<
                     std::setw(12) << table.hash_table[i].deleted <<
                     std::setw(8) << table.hash_table[i].prK << std::setw(16) <<
@@ -176,15 +150,14 @@ size_t FindElem (HashTable& hashTable, const std::string& key) {
            && hashTable.hash_table[pos].key != key) {
         pos++;
 
-        if (pos == hashTable.table_size) {
+        if (pos == hashTable.table_size)
             pos = 0;
-        }
     }
 
     if (hashTable.hash_table[pos].key != key)
         return -1;
 
-    return pos;
+    return hashTable.hash_table[pos].ind_data;
 }
 
 #endif //CODE_TASK_1_H
