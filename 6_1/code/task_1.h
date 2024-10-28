@@ -1,4 +1,3 @@
-
 #ifndef CODE_TASK_1_H
 #define CODE_TASK_1_H
 
@@ -18,7 +17,6 @@ struct Node {
     int ind_data;
 };
 
-
 struct HashTable {
     size_t table_size = 5;
     size_t num_closed = 0;
@@ -33,10 +31,9 @@ struct HashTable {
     }
 };
 
-
-void ResizeTable(HashTable&, float);
+void ResizeTable(HashTable&);
 void PrintHashTable(HashTable&);
-void InsertElem(HashTable&, std::string key, int ind_data);
+void InsertElem(HashTable&, std::string key, size_t ind_data);
 
 bool isPrime(int num) {
     int q = (int)sqrt(num);
@@ -52,15 +49,18 @@ bool isPrime(int num) {
     return true;
 }
 
-size_t djb2Hash(const std::string& str) {
-    size_t hash = 5381;
-    for (char c : str) {
-        hash = ((hash << 5) + hash) + static_cast<size_t>(c);
+size_t HashFun(const std::string& str) {
+    size_t hash_value = 0;
+    for (char ch : str) {
+        hash_value += static_cast<size_t>(ch);
+        hash_value += (hash_value << 10);
+        hash_value ^= (hash_value >> 6);
     }
-    return hash;
+    hash_value += (hash_value << 3);
+    hash_value ^= (hash_value >> 11);
+    hash_value += (hash_value << 15);
+    return hash_value;
 }
-
-
 
 void ResizeTable(HashTable& hashTable) {
     size_t old_size = hashTable.table_size;
@@ -84,8 +84,8 @@ void ResizeTable(HashTable& hashTable) {
     delete[] old_table;
 }
 
-void InsertElem(HashTable& hashTable, std::string key, int ind_data) {
-    size_t pos = djb2Hash(key) % hashTable.table_size;
+void InsertElem(HashTable& hashTable, std::string key, size_t ind_data) {
+    size_t pos = HashFun(key) % hashTable.table_size;
     bool K = false;
 
     while (!hashTable.hash_table[pos].opened) {
@@ -111,7 +111,7 @@ void InsertElem(HashTable& hashTable, std::string key, int ind_data) {
 }
 
 void DeleteElem(HashTable& hashTable, const std::string& key) {
-    size_t pos = djb2Hash(key) % hashTable.table_size;
+    size_t pos = HashFun(key) % hashTable.table_size;
 
     while ((!hashTable.hash_table[pos].opened || hashTable.hash_table[pos].deleted)
             && hashTable.hash_table[pos].key != key) {
@@ -129,22 +129,21 @@ void DeleteElem(HashTable& hashTable, const std::string& key) {
 }
 
 void PrintHashTable(HashTable& table) {
-    std::cout << std::right << std::setw(4) << "#" << std::setw(10) << "KEY" << std::setw(16) << "Name"
+    std::cout << std::right << std::setw(4) << "#" << std::setw(10) << "KEY"
         << std::setw(12) << "OpenKey" << std::setw(12) << "DeletedKey" << std::setw(8) << "prK" <<
         std::setw(16) << "Hash % size" << '\n';
     for (size_t i = 0; i < table.table_size; i++) {
         bool flag = !table.hash_table[i].opened && !table.hash_table[i].deleted;
         std::cout << std::right << std::setw(4) << i << std::setw(10) << (flag ? table.hash_table[i].key : std::string(9, '.')) <<
-                    std::setw(16) << (flag ? table.hash_table[i].key : std::string(15, '.')) <<
-                    std::boolalpha << std::setw(12) << table.hash_table[i].opened <<
-                    std::setw(12) << table.hash_table[i].deleted <<
-                    std::setw(8) << table.hash_table[i].prK << std::setw(16) <<
-                    (flag ? std::to_string(djb2Hash(table.hash_table[i].key) % table.table_size) : std::string(15, '.')) << '\n';
+                  std::boolalpha << std::setw(12) << table.hash_table[i].opened <<
+                  std::setw(12) << table.hash_table[i].deleted <<
+                  std::setw(8) << table.hash_table[i].prK << std::setw(16) <<
+                  (flag ? std::to_string(HashFun(table.hash_table[i].key) % table.table_size) : std::string(15, '.')) << '\n';
     }
 }
 
 size_t FindElem (HashTable& hashTable, const std::string& key) {
-    size_t pos = djb2Hash(key) % hashTable.table_size;
+    size_t pos = HashFun(key) % hashTable.table_size;
 
     while ((!hashTable.hash_table[pos].opened || hashTable.hash_table[pos].deleted)
            && hashTable.hash_table[pos].key != key) {
@@ -154,7 +153,7 @@ size_t FindElem (HashTable& hashTable, const std::string& key) {
             pos = 0;
     }
 
-    if (hashTable.hash_table[pos].key != key)
+    if (hashTable.hash_table[pos].key != key || hashTable.hash_table[pos].deleted)
         return -1;
 
     return hashTable.hash_table[pos].ind_data;

@@ -146,12 +146,11 @@ Violation GetViolationByCarNum(const std::string& bin_file_name, const std::stri
     return {};
 }
 
-void DeleteViolationByCarNum(const std::string& bin_file_name, const std::string& car_num) {
+// Теперь возвращает индекс записи, удаленной и измененной на последнюю запись
+size_t DeleteViolationByCarNum(const std::string& bin_file_name, const std::string& car_num) {
     std::fstream bin_file(bin_file_name, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
-    if (!bin_file.is_open()) {
-        std::cerr << "Error opening file" << '\n';
-        return;
-    }
+    if (!bin_file.is_open())
+        return -1;
 
     size_t file_size = fs::file_size(bin_file_name);
     bin_file.seekg(0, std::ios::beg);
@@ -167,24 +166,23 @@ void DeleteViolationByCarNum(const std::string& bin_file_name, const std::string
     std::streampos cur_pos = std::ios::beg;
     Violation violation;
 
+    size_t ind_del = -1;
     bin_file.seekp(std::ios::beg);
     while (cur_pos != file_size) {
         bin_file.read((char*)&violation, sizeof(Violation));
 
-        if (strcmp(violation.carNumber, car_num.c_str()) == 0 && !deleted) {
+        if (strcmp(violation.carNumber, car_num.c_str()) == 0 && ind_del == -1) {
             bin_file.seekp(cur_pos);
             bin_file.write((char*)&last_violation, sizeof(Violation));
-            deleted = true;
+            ind_del = cur_pos / sizeof(Violation);
         }
 
         cur_pos = bin_file.tellg();
     }
 
-    if (!deleted)
-        std::cerr << "Record not found" << '\n';
-
     bin_file.close();
     fs::resize_file(bin_file_name, file_size - sizeof(Violation));
+    return ind_del;
 }
 
 void SelectionByCarNum(const std::string& bin_file_name, const std::string& new_file_name, const std::string& car_num) {
@@ -252,32 +250,30 @@ void PrintBinFileInHex(const std::string& bin_file_name) {
     bin_file.close();
 }
 
-
-std::string GetViolationByOrdinalNum(const std::string& bin_file_name, const int num, bool& SUCCESS_CODE) {
+Violation GetViolationByOrdinalNum(const std::string& bin_file_name, const size_t ordinal_num, bool& SUCCESS_CODE) {
     std::fstream bin_file(bin_file_name, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
     SUCCESS_CODE = false;
 
     if (!bin_file.is_open()) {
-        std::cerr << "Error opening file" << '\n';
-        return "";
+        return {};
     }
 
     size_t file_size = fs::file_size(bin_file_name);
     bin_file.seekg(0, std::ios::beg);
     int violations_count = file_size / sizeof(Violation);
 
-    if (num > violations_count || num <= 0) {
-        return "";
+    if (ordinal_num > violations_count - 1 || ordinal_num < 0) {
+        return {};
     }
 
-    std::streampos record_pos = (num - 1) * sizeof(Violation);
+    std::streampos record_pos = ordinal_num * sizeof(Violation);
     bin_file.seekg(record_pos, std::ios::beg);
 
     Violation target_violation;
     bin_file.read((char*)&target_violation, sizeof(Violation));
 
     SUCCESS_CODE = true;
-    return target_violation.ToString();
+    return target_violation;
 }
 
 #endif //CODE_BINFILEWORKER_H
