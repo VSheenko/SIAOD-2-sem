@@ -6,26 +6,6 @@
 #include <fstream>
 #include <string>
 
-std::vector<std::string> Split(std::string s, const std::string& separator) {
-    std::vector<std::string> tokens;
-    size_t pos = 0;
-    std::string token;
-
-    while ((pos = s.find(separator)) != std::string::npos) {
-        token = s.substr(0, pos);
-
-        if (!token.empty())
-            tokens.push_back(token);
-
-        s.erase(0, pos + separator.length());
-    }
-
-    if (!s.empty())
-        tokens.push_back(s);
-
-    return tokens;
-}
-
 void PrintFileContent(std::ifstream& file) {
     std::string s;
     while (std::getline(file, s)) {
@@ -38,34 +18,26 @@ void AppendContentToFile(std::ofstream& file, const std::string& s_content) {
 }
 
 int GetNumByOrdinal(std::ifstream& file, int ordinal_num, bool& SUCCESS_CODE) {
-    std::string s;
+    int num;
     int cur_num = 0;
-    while (std::getline(file, s)) {
-        std::vector<std::string> parts = Split(s, " ");
+    while (file >> num) {
+        cur_num++;
 
-        for (const auto &part: parts) {
-            cur_num++;
-
-            if (cur_num == ordinal_num) {
-                file.close();
-                return std::stoi(part);
-            }
+        if (cur_num == ordinal_num) {
+            file.close();
+            return num;
         }
     }
-
 
     SUCCESS_CODE = false;
     return SUCCESS_CODE;
 }
 
 int CountNum(std::ifstream& file) {
-    std::string s;
+    int num;
     int count = 0;
-    while (std::getline(file, s)) {
-        std::vector<std::string> parts = Split(s, " ");
-
-        for (const auto &part: parts)
-            count++;
+    while (file >> num) {
+        count++;
     }
 
     return count;
@@ -83,21 +55,18 @@ void Partition(std::ifstream& in_file) {
     }
 
     int k = 0;
-    std::string s;
+    int num;
     int half = count / 2;
 
     in_file.clear();
     in_file.seekg(0, std::ios::beg);
-    while (std::getline(in_file, s)) {
-        std::vector<std::string> parts = Split(s, " ");
+    while (in_file >> num) {
+        if (k < half)
+            out_a_file << num << '\n';
+        else
+            out_b_file << num << '\n';
+        k++;
 
-        for (const auto &part: parts) {
-            if (k < half)
-                out_a_file << part << '\n';
-            else
-                out_b_file << part << '\n';
-            k++;
-        }
     }
 
     out_a_file.close();

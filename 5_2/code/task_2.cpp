@@ -41,10 +41,10 @@ int main() {
                 std::cin >> ord_num;
 
                 bool code = false;
-                std::string s = GetViolationByOrdinalNum(bin_file_name, ord_num, code);
+                Violation s = GetViolationByOrdinalNum(bin_file_name, ord_num, code);
 
                 if (code)
-                    std::cout << s << '\n';
+                    std::cout << s.ToString() << '\n';
                 else
                     std::cerr << "No such violation\n";
 
