@@ -37,19 +37,4 @@ public:
     void CopyTree(BST& new_tree);
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif //CODE_BST_H

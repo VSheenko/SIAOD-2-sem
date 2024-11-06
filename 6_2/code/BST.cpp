@@ -27,12 +27,17 @@ void BST::InsertElem(const std::string &str) {
 }
 
 void BST::InitTree(const std::vector<std::string> &elems) {
-    for (auto& i : elems)
+    for (const auto& i : elems)
         InsertElem(i);
 }
 
 
 void BST::PrintTree() {
+    if (!this->p_root) {
+        std::cout << "Empty tree\n";
+        return;
+    }
+
     PrintTreeHelper(p_root, "", true, true);
 }
 
@@ -79,7 +84,7 @@ int BST::SpecCount(int num) {
         Node* cur = q.front();
         q.pop();
 
-        if (cur->digit_count >= num)
+        if (cur->digit_count > num)
             res++;
 
         if (cur->p_left)
@@ -97,6 +102,7 @@ bool BST::IsDegenerate() {
 
     bool left = (this->p_root->p_left ? true : false);
     Node* cur = p_root;
+
     while (cur) {
         if (left && cur->p_right)
             return false;
