@@ -73,20 +73,26 @@ void BinarySearchTree::Remove(const std::string &key) {
         return;
 
     if (!p_delete_node->p_left) {
-        if (p_delete_node->p_parent->p_left == p_delete_node)
+        if (p_delete_node->p_parent->p_left == p_delete_node) {
             p_delete_node->p_parent->p_left = p_delete_node->p_right;
-        else
+            p_delete_node->p_left->p_parent = p_delete_node->p_parent;
+        } else {
             p_delete_node->p_parent->p_right = p_delete_node->p_right;
+            p_delete_node->p_right->p_parent = p_delete_node->p_parent;
+        }
 
         delete p_delete_node;
         return;
     }
 
     if (!p_delete_node->p_right) {
-        if (p_delete_node->p_parent->p_left == p_delete_node)
+        if (p_delete_node->p_parent->p_left == p_delete_node) {
             p_delete_node->p_parent->p_left = p_delete_node->p_left;
-        else
+            p_delete_node->p_left->p_parent = p_delete_node->p_parent;
+        } else {
             p_delete_node->p_parent->p_right = p_delete_node->p_left;
+            p_delete_node->p_left->p_parent = p_delete_node->p_parent;
+        }
 
         delete p_delete_node;
         return;
@@ -102,7 +108,12 @@ void BinarySearchTree::Remove(const std::string &key) {
     }
 
     p_min_node->p_left = p_delete_node->p_left;
+    p_delete_node->p_left->p_parent = p_min_node;
+
     p_min_node->p_right = p_delete_node->p_right;
+    p_delete_node->p_right->p_parent = p_min_node;
+
+    p_min_node->p_parent = p_delete_node->p_parent;
     delete p_delete_node;
 }
 
