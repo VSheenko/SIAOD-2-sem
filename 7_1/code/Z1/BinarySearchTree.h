@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <string>
+#include <iostream>
+#include <iomanip>
 
 class BinarySearchTree {
 private:
@@ -10,10 +12,13 @@ private:
         std::string key;
         size_t link_to_record = 0;
 
+        Node* p_parent = nullptr;
         Node* p_left = nullptr;
         Node* p_right = nullptr;
 
-        explicit Node(std::string s, size_t ind) : key(std::move(s)), link_to_record(ind) {};
+        explicit Node(std::string s, size_t ind, Node* parent) : key(std::move(s)),
+                                                                 link_to_record(ind),
+                                                                 p_parent(parent) {};
 
         ~Node() {
             if (!p_left) {
@@ -31,8 +36,8 @@ private:
 
     Node* p_root = nullptr;
 
-    void PrintHelper();
-
+    void PrintHelper(Node* node, const std::string& prefix, bool isLeft, bool isRoot = false);
+    Node* FindMin(Node* node);
 public:
     BinarySearchTree() = default;
     ~BinarySearchTree();
