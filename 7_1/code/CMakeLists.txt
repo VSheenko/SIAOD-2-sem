@@ -7,4 +7,5 @@ add_executable(code main.cpp
         Z1/BinarySearchTree.cpp
         Z1/BinarySearchTree.h
         Z1/BinFileWorker.cpp
-        Z1/BinFileWorker.h)
+        Z1/BinFileWorker.h
+        Z1/ViolationRecord.h)
