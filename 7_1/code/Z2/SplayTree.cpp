@@ -139,16 +139,19 @@ void SplayTree::Remove(const std::string &key) {
     if (!Find(key, ind))
         return;
 
-    std::shared_ptr<Node> new_root = FindMin(p_root->p_right);
-    new_root->p_parent = nullptr;
+    std::shared_ptr<Node> left_subtree = p_root->p_left;
+    std::shared_ptr<Node> right_subtree = p_root->p_right;
 
-    if (new_root->IsLeft())
-        new_root->p_parent->p_left = nullptr;
-
-    new_root->p_left = p_root->p_left;
-    new_root->p_right = p_root->p_right;
-
-    p_root = new_root;
+    if (!right_subtree) {
+        p_root = left_subtree;
+        if (p_root) p_root->p_parent = nullptr;
+    } else {
+        std::shared_ptr<Node> min_node = FindMin(right_subtree);
+        Splay(min_node);
+        min_node->p_left = left_subtree;
+        if (left_subtree) left_subtree->p_parent = min_node;
+        p_root = min_node;
+    }
 }
 
 void SplayTree::PrintTree() {

@@ -17,4 +17,6 @@ add_executable(Z2
         Z2/SplayTree.h
         Z2/SplayTree.cpp
         Z2/Node.h
+        Z2/BinFileWorker.h
+        Z2/BinFileWorker.cpp
 )
