@@ -1,15 +1,15 @@
-#include "SplayTree.h"
+#include "BinFileWorker.h"
 #include <iostream>
 
 int main() {
-    SplayTree tree;
+    BinFileWorker *worker = BinFileWorker::CreateInstance("example.txt");
     int mode;
 
-    std::cout << "1. Insert\n" <<
-                  "2. Find\n" <<
-                  "3. Remove\n" <<
-                  "4. Print\n" <<
-                  "5. Exit\n";
+    std::cout << "1. FindInTree\n" <<
+                 "2. Remove\n" <<
+                 "3. Print\n" <<
+                 "4. Get rotations\n" <<
+                 "5. Exit\n";
     std::cin >> mode;
 
     size_t ind;
@@ -17,36 +17,34 @@ int main() {
     while (mode != 5) {
         switch (mode) {
             case 1:
-                std::cout << "Enter key and index: ";
-                std::cin >> key >> ind;
-                tree.Insert(key, ind);
+                std::cout << "Enter key: ";
+                std::cin >> key;
+                ViolationRecord r;
+                if (worker->FindRecord(key, r))
+                    std::cout << "Found: " << r.ToString() << std::endl;
+                else
+                    std::cout << "Not found" << std::endl;
                 break;
             case 2:
                 std::cout << "Enter key: ";
                 std::cin >> key;
-                size_t found_ind;
-                if (tree.Find(key, found_ind))
-                    std::cout << "Found at index " << found_ind << std::endl;
-                else
-                    std::cout << "Not found" << std::endl;
+                worker->RemoveFromTree(key);
                 break;
             case 3:
-                std::cout << "Enter key: ";
-                std::cin >> key;
-                tree.Remove(key);
+                worker->PrintTree();
                 break;
             case 4:
-                tree.PrintTree();
+                std::cout << "Rotations: " << worker->GetRotations() << std::endl;
                 break;
             default:
                 std::cout << "Invalid mode" << std::endl;
                 break;
         }
 
-        std::cout << "1. Insert\n" <<
-                  "2. Find\n" <<
-                  "3. Remove\n" <<
-                  "4. Print\n" <<
+        std::cout << "1. FindInTree\n" <<
+                  "2. Remove\n" <<
+                  "3. Print\n" <<
+                  "4. Get rotations\n" <<
                   "5. Exit\n";
         std::cin >> mode;
 

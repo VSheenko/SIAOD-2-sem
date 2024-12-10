@@ -13,10 +13,10 @@ private:
     fs::path bin_file_path;
     fs::path txt_file_path;
 
-    BinarySearchTree* tree = nullptr;
-
     BinFileWorker(const fs::path& txt_file_path, const fs::path& bin_file_path);
+
 public:
+    BinarySearchTree* tree = nullptr;
     static BinFileWorker* CreateInstance(const fs::path& txt_file_path, const fs::path& bin_file_path);
     static BinFileWorker* CreateInstance(const fs::path& txt_file_path);
     ~BinFileWorker();
@@ -28,6 +28,9 @@ public:
     bool GetRecordByInd(size_t index, ViolationRecord& record);
     bool FindRecord(const std::string& car_number, ViolationRecord& record);
     void PrintBin();
+    void RemoveInTree(const std::string& car_number) const;
+    int FindInTree(const std::string& car_number) const;
+    void AddToTree(std::string key, size_t ind);
 };
 
 

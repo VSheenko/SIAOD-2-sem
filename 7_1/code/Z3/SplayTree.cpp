@@ -1,13 +1,17 @@
 #include "SplayTree.h"
 #include <iostream>
+#include <queue>
 
-void SplayTree::Splay(std::shared_ptr<Node> node) {
+int SplayTree::Splay(std::shared_ptr<Node> node) {
+    int result = 0;
+
     while (node->p_parent) {
         if (!node->p_parent->p_parent) {
             if (node->IsLeft())
                 RightRotate(node->p_parent);
             else
                 LeftRotate(node->p_parent);
+            result += 3;
         } else {
             bool isLeftChild = node->IsLeft();
             bool parentIsLeftChild = node->p_parent->IsLeft();
@@ -21,6 +25,7 @@ void SplayTree::Splay(std::shared_ptr<Node> node) {
                     LeftRotate(node->p_parent->p_parent);
                     LeftRotate(node->p_parent);
                 }
+                result += 4;
             } else {
                 // Zig-Zag
                 if (isLeftChild) {
@@ -30,14 +35,15 @@ void SplayTree::Splay(std::shared_ptr<Node> node) {
                     LeftRotate(node->p_parent);
                     RightRotate(node->p_parent);
                 }
+                result += 4;
             }
         }
     }
+
+    return result;
 }
 
 std::shared_ptr<Node> SplayTree::RightRotate(std::shared_ptr<Node> node) {
-    rotations++;
-
     auto new_root = node->p_left;
     if (!new_root) return node;
 
@@ -62,8 +68,6 @@ std::shared_ptr<Node> SplayTree::RightRotate(std::shared_ptr<Node> node) {
 }
 
 std::shared_ptr<Node> SplayTree::LeftRotate(std::shared_ptr<Node> node) {
-    rotations++;
-
     auto new_root = node->p_right;
     if (!new_root) return node;
 
@@ -87,16 +91,10 @@ std::shared_ptr<Node> SplayTree::LeftRotate(std::shared_ptr<Node> node) {
     return new_root;
 }
 
-std::shared_ptr<Node> SplayTree::FindMin(std::shared_ptr<Node> node) {
-    while (node && node->p_left)
-        node = node->p_left;
 
-    return node;
-}
-
-void SplayTree::Insert(const std::string &key, size_t ind) {
+void SplayTree::Insert(int key) {
     if (!p_root) {
-        p_root = std::make_shared<Node>(key, ind, nullptr);
+        p_root = std::make_shared<Node>(key, nullptr);
         return;
     }
 
@@ -112,70 +110,54 @@ void SplayTree::Insert(const std::string &key, size_t ind) {
     }
 
     if (key < p_parent->key) {
-        p_parent->p_left = std::make_shared<Node>(key, ind, p_parent);
+        p_parent->p_left = std::make_shared<Node>(key, p_parent);
         Splay(p_parent->p_left);
     } else {
-        p_parent->p_right = std::make_shared<Node>(key, ind, p_parent);
+        p_parent->p_right = std::make_shared<Node>(key, p_parent);
         Splay(p_parent->p_right);
     }
 }
 
-bool SplayTree::Find(const std::string &key, size_t &found_ind) {
+int SplayTree::Find(int key) {
+    int result = 0;
     std::shared_ptr<Node> p_cur_node = p_root;
 
+    result += 1;
     while (p_cur_node && p_cur_node->key != key) {
+        result += 3;
         if (key < p_cur_node->key)
             p_cur_node = p_cur_node->p_left;
         else
             p_cur_node = p_cur_node->p_right;
     }
 
-    if (p_cur_node) {
-        found_ind = p_cur_node->link_to_record;
-        Splay(p_cur_node);
+    if (p_cur_node.get()) {
+        result += Splay(p_cur_node);
     }
 
-    return (bool)p_cur_node;
-}
-
-void SplayTree::Remove(const std::string &key) {
-    size_t ind;
-    if (!Find(key, ind))
-        return;
-
-    std::shared_ptr<Node> left_subtree = p_root->p_left;
-    std::shared_ptr<Node> right_subtree = p_root->p_right;
-
-    if (!right_subtree) {
-        p_root = left_subtree;
-        if (p_root) p_root->p_parent = nullptr;
-    } else {
-        std::shared_ptr<Node> min_node = FindMin(right_subtree);
-        Splay(min_node);
-        min_node->p_left = left_subtree;
-        if (left_subtree) left_subtree->p_parent = min_node;
-        p_root = min_node;
+    if (p_cur_node && p_cur_node->key == key) {
+        return result;
     }
+
+    return -1;
 }
 
-void SplayTree::PrintTree() {
-    PrintHelper(p_root, "", false, true);
-}
+size_t SplayTree::MemoryUsage() {
+    size_t memory = sizeof *this;
+    std::queue<std::shared_ptr<Node>> q;
+    q.push(p_root);
 
-void SplayTree::PrintHelper(std::shared_ptr<Node> node, const std::string &prefix, bool isLeft, bool isRoot) {
-    if (node != nullptr) {
+    while (!q.empty()) {
+        auto node = q.front();
+        q.pop();
+        if (!node) continue;
 
-        std::cout << prefix;
-        if (isRoot)
-            std::cout <<  "----";
-        else
-            std::cout << (isLeft ? "L---" : "|---");
-
-        std::cout << node->key << std::endl;
-
-        PrintHelper(node->p_right, prefix + (isLeft ? "    " : "|   "), false);
-        PrintHelper(node->p_left, prefix + (isLeft ? "    " : "|   "), true);
+        memory += sizeof *node;
+        q.push(node->p_left);
+        q.push(node->p_right);
     }
+
+    return memory;
 }
 
 

@@ -134,3 +134,29 @@ bool BinFileWorker::FindRecord(const std::string &car_number, ViolationRecord &r
     return GetRecordByInd(index, record);
 }
 
+void BinFileWorker::RemoveInTree(const std::string &car_number) const {
+    if (!tree)
+        throw std::runtime_error("RemoveInTree-> Tree is not initialized");
+
+    tree->Remove(car_number);
+}
+
+int BinFileWorker::FindInTree(const std::string &car_number) const {
+    if (!tree)
+        throw std::runtime_error("FindInTree-> Tree is not initialized");
+
+    size_t index;
+    if (tree->Find(car_number, index))
+        return index;
+
+    return -1;
+}
+
+void BinFileWorker::AddToTree(std::string key, size_t ind) {
+    if (!tree)
+        throw std::runtime_error("AddToTree-> Tree is not initialized");
+
+    tree->Insert(key, ind);
+
+}
+

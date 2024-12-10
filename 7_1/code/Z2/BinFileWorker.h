@@ -21,12 +21,14 @@ public:
     static BinFileWorker* CreateInstance(const fs::path& txt_file_path);
     ~BinFileWorker();
 
+    void RemoveFromTree(const std::string& key);
     void TranslateToBin();
     void TranslateToTxt();
     void InitTreeByBin();
     void PrintTree();
     bool GetRecordByInd(size_t index, ViolationRecord& record);
     bool FindRecord(const std::string& car_number, ViolationRecord& record);
+    int GetRotations();
     void PrintBin();
 };
 

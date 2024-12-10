@@ -14,6 +14,8 @@ private:
     void PrintHelper(std::shared_ptr<Node> node, const std::string& prefix, bool isLeft, bool isRoot = false);
 
 public:
+    int rotations = 0; // for testing
+
     void Insert(const std::string &key, size_t ind);
     bool Find(const std::string &key, size_t& found_ind);
     void Remove(const std::string &key);
