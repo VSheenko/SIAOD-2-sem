@@ -5,4 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(code main.cpp
         Graph.cpp
-        Graph.h)
+        Graph.h
+)
+
+add_executable(z2
+        z2/main.cpp
+)
